@@ -2,7 +2,7 @@ This repository contains implementations for constrained-aligned decoding.
 
 ## GreatGramma
 
-This repository also contains the implementation of `GreatGramma`, a tool implementing algorithm of the paper 'Flexible and Efficient Grammar-Constrained Decoding' `GreatGrammar` can be installed by running `pip install -e .`.
+This repository also contains the implementation of `GreatGramma`, a tool implementing algorithm of the paper 'Flexible and Efficient Grammar-Constrained Decoding' `GreatGramma` can be installed by running `pip install -e .`.
 `GreatGramma` requires specific version of the `transformers` package. Run `pip install -r requirements.txt` for setup.
 
 The CFG monitor is implemented in `alignment/monitor/grammar`. 
