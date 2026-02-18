@@ -1,5 +1,3 @@
-# Alignment
-
 This repository contains implementations for constrained-aligned decoding.
 
 ## GreatGramma
