@@ -1,10 +1,47 @@
 from unittest import TestCase
+from unittest.mock import patch
 from lark import Lark
 
-from alignment.monitor.grammar.partial_lexer import PartialLexerFST
+from alignment.monitor.grammar import partial_lexer
+from alignment.monitor.grammar.partial_lexer import END_TERMINAL, PartialLexerFST
 
 class PartialLexerFSTTest(TestCase):
     """Unit test for PartialLexerFST class"""
+
+    def test_eos_is_rejected_after_returning_to_automaton_start(self):
+        grammar = """
+            start: TERMINAL
+            TERMINAL: /(ab)*a/
+        """
+        vocabulary = {1: 'ab', 2: 'a', 3: 'EOS'}
+
+        original_union = partial_lexer._union
+
+        def reduced_union(*fsms):
+            fsm, _ = original_union(*fsms)
+            fsm = fsm.reduce()
+            return fsm, {state: 0 for state in fsm.finals}
+
+        with patch.object(partial_lexer, '_union', side_effect=reduced_union):
+            lexer_conf = Lark(grammar, parser='lalr').lexer_conf
+            fst = PartialLexerFST(lexer_conf, vocabulary, eos_token_id=3)
+
+        state_after_ab, out = fst.follow(fst.initial, 1)
+        self.assertEqual(state_after_ab, fst.fsm.initial)
+        self.assertEqual(out, ())
+        self.assertIsNone(fst.follow(state_after_ab, 3))
+
+        self.assertEqual(
+            fst.follow(fst.initial, 3),
+            (fst.initial, (END_TERMINAL,)),
+        )
+
+        state_after_a, out = fst.follow(fst.initial, 2)
+        self.assertEqual(out, ())
+        self.assertEqual(
+            fst.follow(state_after_a, 3),
+            (fst.initial, ('TERMINAL', END_TERMINAL)),
+        )
 
     def test_calc_grammar(self):
         calc_grammar = """

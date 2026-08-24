@@ -143,8 +143,8 @@ class PartialLexerFST(BasicLexer):
 
         self.fsm = fsm
         self.final_map = final_map
-        self.initial = fsm.initial
-        self.states = fsm.states
+        self.initial = len(fsm.states)
+        self.states = fsm.states | {self.initial}
         self.finals = fsm.finals
 
     def _compute_transition_dfs(
@@ -167,11 +167,11 @@ class PartialLexerFST(BasicLexer):
 
         for src, (dest, out) in prev_result.items():
             if not (dest in self.fsm.map and transition in self.fsm.map[dest]):
-                if dest in self.finals and transition in self.fsm.map[self.initial]:
+                if dest in self.finals and transition in self.fsm.map[self.fsm.initial]:
                     # Case 2: the transition stuck at a final state
                     out = out if self.final_map[dest] in self.ignore_types \
                               else out + (self.final_map[dest],)
-                    result[src] = (self.fsm.map[self.initial][transition], out)
+                    result[src] = (self.fsm.map[self.fsm.initial][transition], out)
 
             # Case 1: the input can be partially matched to a terminal
             else:
@@ -197,7 +197,8 @@ class PartialLexerFST(BasicLexer):
                 leaf_nodes[node.id] = node
 
         # Update transition map
-        id_map = {state:(state, tuple()) for state in self.states}
+        id_map = {state:(state, tuple()) for state in self.fsm.states}
+        id_map[self.initial] = (self.fsm.initial, tuple())
         for transition, child in trie.root.children.items():
             self._compute_transition_dfs(child, transition, id_map)
 
@@ -251,8 +252,9 @@ class PartialLexerFST(BasicLexer):
     def _compute_reachable_terminals(self):
         reachable_terminals = {}
 
-        for state in self.states:
+        for state in self.fsm.states:
             reachable_terminals[state] = self._compute_reachable_terminals_single(state)
+        reachable_terminals[self.initial] = reachable_terminals[self.fsm.initial]
 
         self.reachable_terminals = reachable_terminals
 
